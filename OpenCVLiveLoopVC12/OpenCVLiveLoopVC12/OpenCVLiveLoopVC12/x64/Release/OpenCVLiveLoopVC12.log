@@ -1,0 +1,18 @@
+﻿Der Buildvorgang wurde am 07.12.2018 16:08:25 gestartet.
+     1>Projekt "C:\Users\boph1013\Desktop\CV Lab\Labor 6\OpenCVLiveLoopVC12\OpenCVLiveLoopVC12\OpenCVLiveLoopVC12\OpenCVLiveLoopVC12.vcxproj" auf Knoten "2", Build Ziel(e).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\x86_amd64\CL.exe /c /Zi /nologo /W3 /WX- /sdl /O2 /Oi /GL /D WIN32 /D NDEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Yu"stdafx.h" /Fp"x64\Release\OpenCVLiveLoopVC12.pch" /Fo"x64\Release\\" /Fd"x64\Release\vc110.pdb" /Gd /TP /errorReport:prompt OpenCVLiveLoopVC12.cpp
+         OpenCVLiveLoopVC12.cpp
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\boph1013\Desktop\CV Lab\Labor 6\OpenCVLiveLoopVC12\OpenCVLiveLoopVC12\x64\Release\OpenCVLiveLoopVC12.exe" /INCREMENTAL:NO /NOLOGO opencv_core249.lib opencv_highgui249.lib opencv_video249.lib opencv_ml249.lib opencv_legacy249.lib opencv_imgproc249.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\boph1013\Desktop\CV Lab\Labor 6\OpenCVLiveLoopVC12\OpenCVLiveLoopVC12\x64\Release\OpenCVLiveLoopVC12.pdb" /SUBSYSTEM:CONSOLE /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\boph1013\Desktop\CV Lab\Labor 6\OpenCVLiveLoopVC12\OpenCVLiveLoopVC12\x64\Release\OpenCVLiveLoopVC12.lib" /MACHINE:X64 x64\Release\MonoLoop.obj
+         x64\Release\OpenCVLiveLoopVC12.obj
+         x64\Release\stdafx.obj
+         x64\Release\StereoLoop.obj
+         Code wird generiert.
+         Codegenerierung ist abgeschlossen.
+         OpenCVLiveLoopVC12.vcxproj -> C:\Users\boph1013\Desktop\CV Lab\Labor 6\OpenCVLiveLoopVC12\OpenCVLiveLoopVC12\x64\Release\OpenCVLiveLoopVC12.exe
+     1>Die Erstellung des Projekts "C:\Users\boph1013\Desktop\CV Lab\Labor 6\OpenCVLiveLoopVC12\OpenCVLiveLoopVC12\OpenCVLiveLoopVC12\OpenCVLiveLoopVC12.vcxproj" ist abgeschlossen, Build Ziel(e).
+
+Build erfolgreich.
+
+Verstrichene Zeit 00:00:02.52
