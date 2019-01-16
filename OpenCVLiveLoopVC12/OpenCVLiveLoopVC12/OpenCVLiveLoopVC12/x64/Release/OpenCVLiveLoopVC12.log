@@ -1,7 +1,7 @@
 ﻿  OpenCVLiveLoopVC12.cpp
   Generating code
-  37 of 154 functions (24.0%) were compiled, the rest were copied from previous compilation.
-    34 functions were new in current compilation
-    11 functions had inline decision re-evaluated but remain unchanged
+  2 of 136 functions ( 1.5%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    0 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   OpenCVLiveLoopVC12.vcxproj -> C:\Users\Philipp\Desktop\Coputervision\Computer-Vision-Luftballonerkennung\OpenCVLiveLoopVC12\OpenCVLiveLoopVC12\x64\Release\OpenCVLiveLoopVC12.exe

@@ -147,6 +147,35 @@ unsigned char findColor()
 	else return 0;
 }
 
+int findFace(cv::Mat circleMask)
+{
+	return -1;
+}
+
+cv::Mat drawCage(cv::Point center, int angle, int radius, cv::Mat inputCage, cv::Mat inputFrame)
+{
+	cv::Mat outputCage;
+	cv::Vec3b green, cageColor;
+	green[0] = 0;
+	green[1] = 255;
+	green[2] = 0;
+	cv::Mat matrix = cv::getRotationMatrix2D(cv::Point(inputCage.cols / 2, inputCage.rows / 2), angle, 1);
+	cv::warpAffine(inputCage, outputCage, matrix, cv::Size(inputCage.cols, inputCage.rows), cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar(0, 255, 0));
+	cv::resize(outputCage, outputCage, cv::Size(radius * 2, radius * 2));
+	for (int x = -radius; x < radius; x++)
+	{
+		for (int y = -radius; y < radius; y++)
+		{
+			cageColor = outputCage.at<cv::Vec3b>(cv::Point(x, y) + cv::Point(radius, radius));
+			if (cageColor != green)
+			{
+				inputFrame.at<cv::Vec3b>(center + cv::Point(x, y)) = cageColor;
+			}
+		}
+	}
+	return inputFrame;
+}
+
 int MonoLoop(unsigned char color)
 {
   cv::VideoCapture cap(0);
@@ -173,6 +202,19 @@ int MonoLoop(unsigned char color)
 
   cv::Mat inputFrame;
   cv::Mat outputFrame;
+  cv::Mat blackCircle;
+  cv::Mat greyFrame;
+  cv::Mat gaussFrame;
+  cv::Mat circleMask;
+
+  vector<cv::Vec3f> circles;
+  //inputCage 
+  cv::Mat inputCage;
+
+  int faceAngle;
+
+  inputCage = cv::imread("C:\\Users\\Philipp\\Desktop\\Coputervision\\Computer-Vision-Luftballonerkennung\\cage.bmp", CV_LOAD_IMAGE_COLOR);
+  //endinputCage 
 
   while(1)
   {
@@ -186,13 +228,19 @@ int MonoLoop(unsigned char color)
     }
 
     /*******************************todo*****************************/
-	cv::Mat src_gray, src;
-	cv::Mat dst, cdst;
 
-	src = inputFrame;
-	cvtColor(inputFrame, src_gray, CV_BGR2GRAY);
+	if (!inputCage.data)
+	{
+		break;
+	}
 
-	//lines1
+	//cv::Mat dst, cdst;
+
+	cvtColor(inputFrame, greyFrame, CV_BGR2GRAY);
+	cvtColor(inputFrame, blackCircle, CV_BGR2GRAY);
+	cvtColor(inputFrame, circleMask, CV_BGR2GRAY);
+
+	/*/lines1
 	Canny(src, dst, 50, 200, 3);
 	cvtColor(dst, cdst, CV_GRAY2BGR);
 	vector<cv::Vec2f> lines;
@@ -208,29 +256,45 @@ int MonoLoop(unsigned char color)
 		pt2.x = cvRound(x0 - 1000 * (-b));
 		pt2.y = cvRound(y0 - 1000 * (a));
 		line(src, pt1, pt2, cv::Scalar(0, 0, 255), 3, CV_AA);
-	}
+	}*/
 
-	/// Reduce the noise so we avoid false circle detection
-	GaussianBlur(src_gray, src_gray, cv::Size(9, 9), 2, 2);
+	/// Reduce the noise so we avoid false circle detection 
+	GaussianBlur(greyFrame, gaussFrame, cv::Size(9, 9), 2, 2);
 
-	vector<cv::Vec3f> circles;
 
-	/// Apply the Hough Transform to find the circles
-	HoughCircles(src_gray, circles, CV_HOUGH_GRADIENT, 1, 100, 10, 90, 0, 0);
+	/// Apply the Hough Transform to find the circles 
+	HoughCircles(gaussFrame, circles, CV_HOUGH_GRADIENT, 1, 100, 10, 90, 0, 0);
 
-	/// Draw the circles detected
+	/// Draw the circles detected 
 	for (size_t i = 0; i < circles.size(); i++)
 	{
 		cv::Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
+		cvtColor(inputFrame, blackCircle, CV_BGR2GRAY); 
+		cvtColor(inputFrame, circleMask, CV_BGR2GRAY); 
 		int radius = cvRound(circles[i][2]);
-		// circle center
-		circle(src, center, 3, cv::Scalar(0, 255, 0), -1, 8, 0);
-		// circle outline
-		circle(src, center, radius, cv::Scalar(0, 0, 255), 3, 8, 0);
+		// black circle 
+		circle(blackCircle, center, radius, 0, -1, 8, 0); 
+		//circle Mask
+		for (int y = 0; y < blackCircle.rows; y++)
+		{
+			for (int x = 0; x < blackCircle.cols; x++)
+			{
+				if (blackCircle.at<uchar>(cv::Point(x, y)) != 0)
+				{
+					circleMask.at<uchar>(cv::Point(x, y)) = 0;
+				}
+			}
+		}
+		faceAngle = findFace(circleMask);
+		if (faceAngle != -1)
+		{
+			inputFrame = drawCage(center, faceAngle, radius, inputCage, inputFrame);
+		}
+
 	}
 
-    outputFrame = src;
-    /***************************end todo*****************************/
+	outputFrame = circleMask; 
+	/***************************end todo*****************************/
     
     imshow("cam", outputFrame);
 
@@ -328,8 +392,8 @@ int _tmain(int argc, _TCHAR* argv[])
   CMonoLoop myLoop;
   //CStereoLoop myLoop;
   //myLoop.Run();
-  unsigned char color = findColor();
-  return MonoLoop(color);
+ // unsigned char color = findColor();
+  return MonoLoop(130);
 }
 
 
