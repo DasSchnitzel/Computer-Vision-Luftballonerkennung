@@ -1,4 +1,4 @@
-// OpenCVLiveLoopVC12.cpp : Definiert den Einstiegspunkt für die Konsolenanwendung.
+// OpenCVLiveLoopVC12.cpp : Definiert den Einstiegspunkt fÃ¼r die Konsolenanwendung.
 //
 
 #include "stdafx.h"
@@ -76,7 +76,78 @@ int MonoLoopOldStyle()
   return 0;
 }
 
-int MonoLoop()
+unsigned char findColor()
+{
+	cv::VideoCapture cap(0);
+
+	if (!cap.isOpened())
+	{
+		cout << "Cannot open the video cam" << endl;
+		return -1;
+	}
+
+	// Set cameras to 15fps (if wanted!!!)
+	cap.set(CV_CAP_PROP_FPS, 15);
+
+	double dWidth = cap.get(CV_CAP_PROP_FRAME_WIDTH);
+	double dHeight = cap.get(CV_CAP_PROP_FRAME_HEIGHT);
+
+	// Set image size
+	cap.set(CV_CAP_PROP_FRAME_WIDTH, MY_IMAGE_WIDTH);
+	cap.set(CV_CAP_PROP_FRAME_HEIGHT, MY_IMAGE_HEIGHT);
+
+	// display the frame size that OpenCV has picked in order to check 
+	cout << "cam Frame size: " << dWidth << " x " << dHeight << endl;
+	cv::namedWindow("cam", CV_WINDOW_AUTOSIZE);
+	int counter = 0;
+	long hueSum = 0;
+	cv::Mat inputFrame;
+
+	for (int i = 0; i < 50; i++)
+	{
+		int histo[256];
+		long hueSumFrame = 0;
+		int counterFrame = 0;
+		bool bSuccess = cap.read(inputFrame);
+
+		if (!bSuccess)
+		{
+			cout << "Cannot read a frame from video stream" << endl;
+			break;
+		}
+
+		for (int i = 0; i < inputFrame.rows; i++) {
+			for (int j = 0; j < inputFrame.cols; j++) {
+				histo[inputFrame.at<cv::Vec3b>(i, j)[0]]++;
+			}
+		}
+		for (int i = 50; i < 130; i++) {
+			hueSumFrame += histo[i] * i;
+			counterFrame += histo[i];
+		}
+		if (counterFrame != 0) {
+			cout << "Average frame hue: " << hueSumFrame / counterFrame << endl;
+			hueSum += hueSumFrame / counterFrame;
+			counter++;
+		}
+		else {
+			cout << "No blue//green pixel in Frame" << endl;
+		}
+		
+		if (cv::waitKey(MY_WAIT_IN_MS) == 27)
+		{
+			cout << "ESC key is pressed by user" << endl;
+			break;
+		}
+	}
+	if (counter != 0) {
+		cout << "Average Hue: " << hueSum / counter << endl;
+		return (unsigned char) (hueSum / counter);
+	}
+	else return 0;
+}
+
+int MonoLoop(unsigned char color)
 {
   cv::VideoCapture cap(0);
 
@@ -257,8 +328,8 @@ int _tmain(int argc, _TCHAR* argv[])
   CMonoLoop myLoop;
   //CStereoLoop myLoop;
   //myLoop.Run();
-
-  return MonoLoop();
+  unsigned char color = findColor();
+  return MonoLoop(color);
 }
 
 
