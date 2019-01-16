@@ -4,12 +4,14 @@
 #include "stdafx.h"
 #include "MonoLoop.h"
 #include "StereoLoop.h"
+#include <math.h>
 #include <iostream>
 using namespace std;
 
 const int MY_IMAGE_WIDTH  = 640;
 const int MY_IMAGE_HEIGHT = 480;
 const int MY_WAIT_IN_MS   = 20;
+const double PI = 3.14159265359;
 
 
 int MonoLoopOldStyle()
@@ -147,9 +149,117 @@ unsigned char findColor()
 	else return 0;
 }
 
-int findFace(cv::Mat circleMask)
+cv::Point intersectNoseMouth(cv::Vec2f mouth, cv::Vec2f nose)
 {
-	return -1;
+	int x, y;
+	x = ((mouth[0] / sin(mouth[1])) - (nose[0] / sin(nose[1]))) / ((-cos(nose[1]) / sin(nose[1])) + (cos(mouth[1]) / sin(mouth[1])));
+	y = (-cos(nose[1]) / sin(nose[1])) * x + (nose[0] / sin(nose[1]));
+	return cv::Point(x, y);
+}
+
+cv::Point intersectNoseEyes(cv::Vec3f eye1, cv::Vec3f eye2, cv::Vec2f nose)
+{
+	int x, y;
+	x = (((nose[0] / sin(nose[1])) - eye1[1]) / (((eye2[1] - eye1[1]) / (eye2[0] - eye1[0])) + (cos(nose[1]) / sin(nose[1])))) + eye1[0];
+	y = (((eye2[1] - eye1[1]) / (eye2[0] - eye1[0])) * (x - eye1[0])) + eye1[1];
+	return cv::Point(x, y);
+}
+
+int distance(cv::Point a, cv::Point b)
+{
+	int d = sqrt(pow((a.x - b.x), 2) + pow((a.y - b.y), 2));
+	return abs(d);
+}
+
+int findFace(cv::Mat circleMask, cv::Point center, int radius)
+{
+	cv::Mat gaussFrame;
+	cv::Mat cannyFrame;
+	vector<cv::Vec2f> lines;
+	vector<cv::Vec3f> circles;
+	int angle, eye1Index, eye2Index, eyeMouthDist, eyeNoseDist, noseMouthDist, lineIndex, circleDist, minCircleDist;
+	cv::Point eyeNose, eyeMouth, noseMouth, circle1, circle2;
+
+	GaussianBlur(circleMask, gaussFrame, cv::Size(9, 9), 2, 2); 
+	HoughCircles(gaussFrame, circles, CV_HOUGH_GRADIENT, 1, 100, 10, 20, 0, radius/5);
+
+
+	Canny(circleMask, cannyFrame, 50, 200, 3);
+	HoughLines(cannyFrame, lines, 1, CV_PI / 180, 55, 0, 0);
+
+	if ((lines.size() > 2) && (circles.size() > 2))
+	{
+		for (size_t i = 1; i < lines.size(); i++)
+		{
+			if (abs(lines[0][1] - lines[i][1]) > ((70.0 / 180.0) * PI) && abs(lines[0][1] - lines[i][1]) < ((110.0 / 180.0) * PI))
+			{
+				lineIndex = i;
+				break;
+			}
+		}
+		circle1 = cv::Point(circles[0][0], circles[0][1]);
+		circle2 = cv::Point(circles[1][0], circles[1][1]);
+		minCircleDist = distance(circle1, circle2);
+		eye1Index = 0;
+		eye2Index = 1;
+		for (size_t i = 0; i < circles.size(); i++)
+		{
+			for (size_t j = 0; j < circles.size(); j++)
+			{
+				if (i != j)
+				{
+					circle1 = cv::Point(circles[i][0], circles[i][1]);
+					circle2 = cv::Point(circles[j][0], circles[j][1]);
+					minCircleDist = distance(circle1, circle2);
+					circleDist = distance(circle1, circle2);
+					if (circleDist < minCircleDist)
+					{
+						minCircleDist = circleDist;
+						eye1Index = i;
+						eye2Index = j;
+					}
+				}
+			}
+		}
+		noseMouth = intersectNoseMouth(lines[0], lines[lineIndex]);
+		eyeMouth = intersectNoseEyes(circles[eye1Index], circles[eye2Index], lines[0]);
+		eyeNose = intersectNoseEyes(circles[eye1Index], circles[eye2Index], lines[lineIndex]);
+		noseMouthDist = distance(noseMouth, center);
+		eyeMouthDist = distance(eyeMouth, center);
+		eyeNoseDist = distance(eyeNose, center);
+		if (noseMouthDist < radius)
+		{
+			if (eyeMouthDist < radius && eyeNoseDist > radius)
+			{
+				return (int)(((eyeMouth.y < noseMouth.y ? (lines[0][1] + PI) : lines[0][1]) / PI) * 180.0);
+			}
+			else if (eyeMouthDist > radius && eyeNoseDist < radius)
+			{
+				return (int)(((eyeNose.y < noseMouth.y ? (lines[lineIndex][1] + PI) : lines[lineIndex][1]) / PI) * 180.0);
+			}
+		}
+	}
+	return -1;/*
+	for (size_t i = 0; i < lines.size(); i++)
+	{
+		float rho = lines[i][0], theta = lines[i][1];
+		cv::Point pt1, pt2;
+		double a = cos(theta), b = sin(theta);
+		double x0 = a * rho, y0 = b * rho;
+		pt1.x = cvRound(x0 + 1000 * (-b));
+		pt1.y = cvRound(y0 + 1000 * (a));
+		pt2.x = cvRound(x0 - 1000 * (-b));
+		pt2.y = cvRound(y0 - 1000 * (a));
+		line(circleMask, pt1, pt2, 255, 3, CV_AA);
+	}
+	for (size_t i = 0; i < circles.size(); i++)
+	{
+		cv::Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
+		int radius = cvRound(circles[i][2]);
+		// black circle 
+		circle(circleMask, center, radius, 255, 5, 8, 0);
+	}
+	return circleMask;*/
 }
 
 cv::Mat drawCage(cv::Point center, int angle, int radius, cv::Mat inputCage, cv::Mat inputFrame)
@@ -166,7 +276,7 @@ cv::Mat drawCage(cv::Point center, int angle, int radius, cv::Mat inputCage, cv:
 	{
 		for (int y = -radius; y < radius; y++)
 		{
-			cageColor = outputCage.at<cv::Vec3b>(cv::Point(x, y) + cv::Point(radius, radius));
+			cageColor = outputCage.at<cv::Vec3b>(cv::Point(x + radius, y + radius));
 			if (cageColor != green)
 			{
 				inputFrame.at<cv::Vec3b>(center + cv::Point(x, y)) = cageColor;
@@ -207,11 +317,16 @@ int MonoLoop(unsigned char color)
   cv::Mat gaussFrame;
   cv::Mat circleMask;
 
+  cv::Point center = (0,0);
   vector<cv::Vec3f> circles;
   //inputCage 
   cv::Mat inputCage;
 
-  int faceAngle;
+  int faceAngle = -1;
+  int angle = -1;
+  int cageCounter = 0;
+  int radius = 0;
+  int entprellen = 0;
 
   inputCage = cv::imread("C:\\Users\\Philipp\\Desktop\\Coputervision\\Computer-Vision-Luftballonerkennung\\cage.bmp", CV_LOAD_IMAGE_COLOR);
   //endinputCage 
@@ -236,9 +351,6 @@ int MonoLoop(unsigned char color)
 
 	//cv::Mat dst, cdst;
 
-	cvtColor(inputFrame, greyFrame, CV_BGR2GRAY);
-	cvtColor(inputFrame, blackCircle, CV_BGR2GRAY);
-	cvtColor(inputFrame, circleMask, CV_BGR2GRAY);
 
 	/*/lines1
 	Canny(src, dst, 50, 200, 3);
@@ -258,20 +370,30 @@ int MonoLoop(unsigned char color)
 		line(src, pt1, pt2, cv::Scalar(0, 0, 255), 3, CV_AA);
 	}*/
 
-	/// Reduce the noise so we avoid false circle detection 
-	GaussianBlur(greyFrame, gaussFrame, cv::Size(9, 9), 2, 2);
+	if (entprellen < 15 && circles.size() != 0)
+	{
+		entprellen++;
+	}
+	else
+	{
+		cvtColor(inputFrame, greyFrame, CV_BGR2GRAY);
+		cvtColor(inputFrame, blackCircle, CV_BGR2GRAY);
+		cvtColor(inputFrame, circleMask, CV_BGR2GRAY);
 
+		/// Reduce the noise so we avoid false circle detection 
+		GaussianBlur(greyFrame, gaussFrame, cv::Size(9, 9), 2, 2);
 
-	/// Apply the Hough Transform to find the circles 
-	HoughCircles(gaussFrame, circles, CV_HOUGH_GRADIENT, 1, 100, 10, 90, 0, 0);
-
+		/// Apply the Hough Transform to find the circles 
+		HoughCircles(gaussFrame, circles, CV_HOUGH_GRADIENT, 1, 100, 10, 90, 0, 0);
+		entprellen = 0;
+	}
 	/// Draw the circles detected 
 	for (size_t i = 0; i < circles.size(); i++)
 	{
-		cv::Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
+		center = cv::Point(cvRound(circles[i][0]), cvRound(circles[i][1]));
 		cvtColor(inputFrame, blackCircle, CV_BGR2GRAY); 
 		cvtColor(inputFrame, circleMask, CV_BGR2GRAY); 
-		int radius = cvRound(circles[i][2]);
+		radius = cvRound(circles[i][2]);
 		// black circle 
 		circle(blackCircle, center, radius, 0, -1, 8, 0); 
 		//circle Mask
@@ -285,15 +407,27 @@ int MonoLoop(unsigned char color)
 				}
 			}
 		}
-		faceAngle = findFace(circleMask);
+		angle = findFace(circleMask, center, radius);
+		if (angle == -1)
+		{
+			cageCounter++;
+		}
+		else
+		{
+			faceAngle = angle;
+		}
+		if (cageCounter == 15)
+		{
+			faceAngle = angle;
+			cageCounter = 0;
+		}
 		if (faceAngle != -1)
 		{
-			inputFrame = drawCage(center, faceAngle, radius, inputCage, inputFrame);
+			inputFrame = drawCage(center, -faceAngle, radius, inputCage, inputFrame);
 		}
-
 	}
-
-	outputFrame = circleMask; 
+	outputFrame = inputFrame;
+	
 	/***************************end todo*****************************/
     
     imshow("cam", outputFrame);
