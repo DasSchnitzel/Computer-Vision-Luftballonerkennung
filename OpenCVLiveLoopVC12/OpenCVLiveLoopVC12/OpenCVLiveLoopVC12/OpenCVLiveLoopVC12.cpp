@@ -231,11 +231,11 @@ int findFace(cv::Mat circleMask, cv::Point center, int radius)
 		{
 			if (eyeMouthDist < radius && eyeNoseDist > radius)
 			{
-				return (int)(((eyeMouth.y < noseMouth.y ? (lines[0][1] + PI) : lines[0][1]) / PI) * 180.0);
+				return (int)(((eyeMouth.x < noseMouth.x ? (lines[0][1] + PI) : lines[0][1]) / PI) * 180.0);
 			}
 			else if (eyeMouthDist > radius && eyeNoseDist < radius)
 			{
-				return (int)(((eyeNose.y < noseMouth.y ? (lines[lineIndex][1] + PI) : lines[lineIndex][1]) / PI) * 180.0);
+				return (int)(((eyeNose.x < noseMouth.x ? (lines[lineIndex][1] + PI) : lines[lineIndex][1]) / PI) * 180.0);
 			}
 		}
 	}
